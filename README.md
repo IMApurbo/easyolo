@@ -186,4 +186,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Ultralytics YOLOv5](https://github.com/ultralytics/yolov5) for the original YOLOv5 implementation.
 - [PyTorch](https://pytorch.org/) for deep learning framework.
-```
+
