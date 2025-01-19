@@ -1,11 +1,14 @@
-from ultralytics import YOLO
 import os
-import yaml
 import shutil
+import yaml
+import cv2
 from sklearn.model_selection import train_test_split
+from ultralytics import YOLO
+import torch
 
 class EasyOLO:
     def __init__(self, output_dir='output/training'):
+        """Initialize the EasyOLO object."""
         self.output_dir = output_dir
         self.model = None
         self.data_file = None
@@ -17,6 +20,10 @@ class EasyOLO:
         """
         # Create output directories if they don't exist
         os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'images', 'train'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'images', 'val'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'annotations', 'train'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'annotations', 'val'), exist_ok=True)
 
         if validation:
             # Use the provided validation image and annotation directories
@@ -75,20 +82,54 @@ class EasyOLO:
         
         self.model.train(data=self.data_file, epochs=epochs, batch_size=batch_size, imgsz=img_size, pretrained=pretrained)
     
-    def predict(self, source, show=True, save=False):
-        """
-        Perform inference on an image, a directory of images, or a webcam.
-        """
+    def load_model(self, model_path):
+        """Load the YOLO model from the specified path."""
+        if os.path.exists(model_path):
+            self.model = YOLO(model_path)
+            print(f"Model loaded from {model_path}")
+        else:
+            print(f"Model path {model_path} does not exist.")
+
+    def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
+        """Make predictions using the specified YOLO model."""
+        # Load the model if it's not loaded
         if not self.model:
-            raise ValueError("Model is not trained yet.")
+            self.load_model(model_path)
+
+        if image_path:
+            self._predict_single_image(image_path)
         
-        # Perform prediction on the source (image path, directory, or webcam)
-        results = self.model(source)
+        elif image_dir:
+            self._predict_multiple_images(image_dir)
         
-        if show:
-            results.show()  # Display the image with bounding boxes
-        
-        if save:
-            results.save()  # Save the results to output
-        
-        return results
+        elif webcam_index is not None:
+            self._predict_webcam(webcam_index)
+        else:
+            print("Please provide either an image path, image directory, or webcam index for prediction.")
+
+    def _predict_single_image(self, image_path):
+        """Process a single image and display predictions."""
+        image = cv2.imread(image_path)
+        results = self.model(image)
+        results.show()
+
+    def _predict_multiple_images(self, image_dir):
+        """Process all images in a directory and display predictions."""
+        for image_name in os.listdir(image_dir):
+            image_path = os.path.join(image_dir, image_name)
+            if image_path.lower().endswith(('png', 'jpg', 'jpeg')):
+                self._predict_single_image(image_path)
+
+    def _predict_webcam(self, webcam_index):
+        """Stream video from the webcam and show predictions."""
+        cap = cv2.VideoCapture(webcam_index)
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            results = self.model(frame)
+            results.show()
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        cap.release()
+        cv2.destroyAllWindows()
