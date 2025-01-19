@@ -1,6 +1,9 @@
 import os
+import random
+import shutil
 import yaml
-from yolov5 import train
+from pathlib import Path
+from ultralytics import YOLO
 
 class EasyOLO:
     def __init__(self):
@@ -12,7 +15,7 @@ class EasyOLO:
 
     def load_data(self, image_dir: str, annotation_dir: str, validation=False, val_image_dir=None, val_annotation_dir=None, split=0.2):
         """
-        Automatically loads and prepares image and annotation data for training and generates the data.yaml file.
+        Automatically load and prepare image and annotation data for training and generates the data.yaml file.
         :param image_dir: Path to training images
         :param annotation_dir: Path to annotation files
         :param validation: If True, validation data is used from val_image_dir and val_annotation_dir
@@ -20,10 +23,20 @@ class EasyOLO:
         :param val_annotation_dir: Path to validation annotations (if validation=True)
         :param split: Proportion of data used for validation (if validation=False)
         """
+        # Create the train/val directories if they don't exist
+        train_image_dir = Path(image_dir) / 'train'
+        val_image_dir = Path(image_dir) / 'val'
+        train_annotation_dir = Path(annotation_dir) / 'train'
+        val_annotation_dir = Path(annotation_dir) / 'val'
+        
+        if not validation:
+            # Split dataset into train/val based on the split ratio
+            self._split_data(image_dir, annotation_dir, split, train_image_dir, val_image_dir, train_annotation_dir, val_annotation_dir)
+        
         # Prepare the data.yaml file
         data = {
-            'train': image_dir,
-            'val': val_image_dir if validation else image_dir,
+            'train': str(train_image_dir),
+            'val': str(val_image_dir),
             'nc': self._count_classes(annotation_dir),  # Number of classes based on annotations
             'names': self._get_class_names(annotation_dir)
         }
@@ -34,6 +47,41 @@ class EasyOLO:
             yaml.dump(data, file)
 
         print(f"Data loaded and data.yaml created at {self.data_yaml}")
+
+    def _split_data(self, image_dir, annotation_dir, split, train_image_dir, val_image_dir, train_annotation_dir, val_annotation_dir):
+        """
+        Split data into training and validation sets.
+        :param image_dir: Path to training images
+        :param annotation_dir: Path to annotation files
+        :param split: Proportion of data for validation
+        :param train_image_dir: Directory for training images
+        :param val_image_dir: Directory for validation images
+        :param train_annotation_dir: Directory for training annotations
+        :param val_annotation_dir: Directory for validation annotations
+        """
+        # Create directories for train and validation if they don't exist
+        train_image_dir.mkdir(parents=True, exist_ok=True)
+        val_image_dir.mkdir(parents=True, exist_ok=True)
+        train_annotation_dir.mkdir(parents=True, exist_ok=True)
+        val_annotation_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get a list of all image files and shuffle them
+        images = [f for f in os.listdir(image_dir) if f.endswith(('.jpg', '.png'))]
+        random.shuffle(images)
+
+        # Split based on the split ratio
+        split_idx = int(len(images) * (1 - split))
+
+        # Move files into respective directories
+        for img in images[:split_idx]:
+            shutil.copy(os.path.join(image_dir, img), os.path.join(train_image_dir, img))
+            anno_file = img.replace(img.split('.')[-1], 'txt')
+            shutil.copy(os.path.join(annotation_dir, anno_file), os.path.join(train_annotation_dir, anno_file))
+
+        for img in images[split_idx:]:
+            shutil.copy(os.path.join(image_dir, img), os.path.join(val_image_dir, img))
+            anno_file = img.replace(img.split('.')[-1], 'txt')
+            shutil.copy(os.path.join(annotation_dir, anno_file), os.path.join(val_annotation_dir, anno_file))
 
     def _count_classes(self, annotation_dir: str):
         """
@@ -65,7 +113,7 @@ class EasyOLO:
 
     def train(self, epochs=100, batch_size=16, img_size=640, lr=0.01, save_dir='output/training', weights='yolov5s.pt'):
         """
-        Train the YOLO model with custom data.
+        Train the YOLO model with custom data using the ultralytics YOLO module.
         :param epochs: Number of epochs for training
         :param batch_size: Batch size for training
         :param img_size: Image size for training
@@ -77,18 +125,21 @@ class EasyOLO:
         if not self.data_yaml:
             raise ValueError("Data.yaml file not found. Please load data first using the load_data() method.")
 
-        # Begin training using the YOLOv5 train module
-        train.run(
-            data=self.data_yaml,             # Path to the data.yaml file
-            img_size=img_size,               # Image size for training
-            batch_size=batch_size,           # Training batch size
-            epochs=epochs,                   # Number of epochs to train
-            lr=lr,                           # Learning rate
-            save_dir=save_dir,               # Directory to save the trained model and results
-            weights=weights,                 # Path to pre-trained weights (default 'yolov5s.pt')
-            device='0'                        # Use GPU if available
+        # Load the YOLO model using pre-trained weights
+        self.model = YOLO(weights)  # 'yolov5s.pt' by default, or other pretrained weights
+
+        # Start the training process using ultralytics YOLO module
+        self.model.train(
+            data=self.data_yaml,          # Path to the data.yaml file
+            epochs=epochs,                # Number of epochs
+            batch_size=batch_size,        # Batch size
+            imgsz=img_size,               # Image size for training
+            lr0=lr,                       # Learning rate
+            project=save_dir,             # Directory to save the training output
+            name='yolo_finetuned',        # Name of the experiment
+            exist_ok=True                 # Allow overwriting of results
         )
-        print(f"Training completed. The model has been saved to {save_dir}")
+        print(f"Training completed. The model has been saved to {save_dir}/yolo_finetuned")
     
     def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
         """
