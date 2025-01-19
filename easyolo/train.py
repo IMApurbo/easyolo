@@ -10,7 +10,7 @@ class EasyOLO:
         self.model = None
         self.data_file = None
 
-    def loaddata(self, image_dir, annotation_dir, validation=False, split=0.2, val_image_dir=None, val_annotation_dir=None):
+    def load_data(self, image_dir, annotation_dir, validation=False, split=0.2, val_image_dir=None, val_annotation_dir=None):
         """
         Load the data and split it if validation is false, otherwise, use the provided validation directories.
         Automatically creates a data.yaml file needed for training.
