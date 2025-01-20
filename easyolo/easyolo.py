@@ -72,9 +72,13 @@ class EasyOLO:
                     class_ids.add(line.split()[0])
         return sorted(class_ids)
 
-    def train(self, epochs=100, batch_size=16, img_size=640, lr=0.01, save_dir='output/training', weights='yolov5s.pt'):
-        if not self.data_yaml:
-            raise ValueError("Data.yaml file not found. Please load data first.")
+    def train(self, epochs=100, batch_size=16, img_size=640, lr=0.01, save_dir='output/training', weights='yolov5s.pt', custom_data_file=None):
+        if custom_data_file:
+            if not Path(custom_data_file).exists():
+                raise FileNotFoundError(f"Custom data file {custom_data_file} not found.")
+            self.data_yaml = custom_data_file
+        elif not self.data_yaml:
+            raise ValueError("Data.yaml file not found. Please load data first or provide a custom data file.")
 
         self.model = YOLO(weights)
         self.model.train(
