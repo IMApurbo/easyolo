@@ -6,12 +6,12 @@ setup(
     name='easyolo',
     version='0.1',
     packages=find_packages(),
-    description='Easy-to-use package for training and predicting with YOLOv5.',
+    description='A Simple YOLO Implementation for Object Detection',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    author='Your Name',
-    author_email='your.email@example.com',
-    url='https://github.com/yourusername/easyolo',  # Replace with your repository URL
+    author='AKM Korishee Apurbo',
+    author_email='bandinvisible8@gmail.com',
+    url='https://github.com/IMApurbo/easyolo',  # Replace with your repository URL
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
