@@ -120,15 +120,6 @@ class EasyOLO:
         print(f"Training completed. Model saved at {save_dir}/yolo_finetuned")
 
     def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
-        """
-        Predict using the YOLO model.
-
-        Args:
-            model_path (str): Path to the trained model.
-            image_path (str): Path to an image for prediction.
-            image_dir (str): Path to a directory of images for prediction.
-            webcam_index (int): Index of the webcam for live prediction.
-        """
         if not self.model:
             self.load_model(model_path)
 
@@ -142,7 +133,6 @@ class EasyOLO:
             print("Provide an image path, directory, or webcam index for prediction.")
 
     def load_model(self, model_path):
-        """Load a trained YOLO model."""
         if Path(model_path).exists():
             self.model = YOLO(model_path)
             print(f"Model loaded from {model_path}")
@@ -150,26 +140,19 @@ class EasyOLO:
             raise FileNotFoundError(f"Model path {model_path} does not exist.")
 
     def _predict_single_image(self, image_path):
-        """Predict on a single image."""
         if not Path(image_path).exists():
             raise FileNotFoundError(f"Image {image_path} does not exist.")
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Error reading image {image_path}.")
         results = self.model(image)
-        
-        # Plot the result using matplotlib for environments like Google Colab
-        plt.imshow(results[0].plot())
-        plt.axis('off')  # Hide axes
-        plt.show()
+        results[0].plot()
 
     def _predict_multiple_images(self, image_dir):
-        """Predict on multiple images in a directory."""
         for image_path in Path(image_dir).glob('*.[jp][pn]g'):
             self._predict_single_image(str(image_path))
 
     def _predict_webcam(self, webcam_index):
-        """Predict using a webcam feed."""
         cap = cv2.VideoCapture(webcam_index)
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open webcam at index {webcam_index}.")
@@ -178,14 +161,7 @@ class EasyOLO:
             if not ret:
                 break
             results = self.model(frame)
-            
-            # Plot the result using matplotlib for webcam feed
-            plt.imshow(results[0].plot())
-            plt.axis('off')  # Hide axes
-            plt.draw()
-            plt.pause(0.001)  # Brief pause to update the plot
-
-            # Break the loop if 'q' is pressed
+            results[0].plot()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
