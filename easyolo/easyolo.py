@@ -91,12 +91,12 @@ class EasyOLO:
                     class_ids.add(line.split()[0])
         return sorted(class_ids)
 
-    def train(self, custom_data_file, epochs=100, batch=16, img_size=640, lr=0.01, save_dir='output/training', weights='/content/yolov5su.pt'):
-        if not custom_data_file:
-            raise ValueError("Custom data file must be specified for training.")
+    def train(self, data_file, epochs=100, batch=16, img_size=640, lr=0.01, save_dir='output/training', weights='/content/yolov5su.pt'):
+        if not data_file:
+            raise ValueError("Data file must be specified for training.")
     
-        if not Path(custom_data_file).exists():
-            raise FileNotFoundError(f"Data file {custom_data_file} does not exist.")
+        if not Path(data_file).exists():
+            raise FileNotFoundError(f"Data file {data_file} does not exist.")
     
         # Ensure the weights path exists
         if not Path(weights).exists():
@@ -107,7 +107,7 @@ class EasyOLO:
     
         # Train the model
         self.model.train(
-            data=custom_data_file,
+            data=data_file,
             epochs=epochs,
             batch=batch,
             imgsz=img_size,
