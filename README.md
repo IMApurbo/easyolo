@@ -1,189 +1,203 @@
-# EasyOLO: Simplified YOLO Fine-Tuning & Uses
+# EasyOLO: A Simple YOLO Implementation for Object Detection
 
-EasyOLO is a Python package designed to make the process of fine-tuning YOLO (You Only Look Once) models easier for object detection tasks. It simplifies the loading of data, automatic generation of the `data.yaml` file, and provides methods for training and inference. This is ideal for users who want a straightforward way to fine-tune YOLO models without worrying about complex setup and configuration.
+**EasyOLO** is a Python library designed to simplify the process of training and using YOLO (You Only Look Once) for object detection tasks. With a straightforward API, it allows users to easily load datasets, train YOLO models, and make predictions using images, directories, or even a webcam. This library is built on top of the **Ultralytics YOLO** implementation and streamlines the setup and usage of YOLO models.
+
+## Benefits of EasyOLO
+
+- **Ease of Use**: EasyOLO provides a clean and simple API for both training and inference.
+- **Data Management**: Automatically splits data into training and validation sets, saving time and effort.
+- **Versatile Predictions**: Perform predictions on single images, multiple images, or live webcam feeds with ease.
+- **Customizable**: Fine-tune model training with customizable parameters like epochs, batch size, learning rate, and more.
+- **Compatible**: Built on top of **Ultralytics YOLO**, one of the most popular YOLO implementations, ensuring high-quality results.
 
 ## Installation
 
-To install `easyolo`, you can use the following command:
+To install EasyOLO, simply clone the repository or install it via pip:
 
 ```bash
 pip install easyolo
 ```
 
-Or, if you prefer to install directly from the GitHub repository:
+## Quick Start Guide
 
-```bash
-git clone https://github.com/your-username/easyolo.git
-cd easyolo
-pip install .
-```
-
-## Features
-
-- **Data Loading**: Automatically loads and prepares image and annotation data for training, with support for train-validation split.
-- **`data.yaml` Creation**: Automatically generates the required `data.yaml` file for YOLOv5, including class labels and the number of classes.
-- **Training**: Simplifies the process of training YOLOv5 by passing configuration options directly into the function.
-- **Inference**: Perform object detection using a pre-trained model with easy image or webcam input.
-
-## Usage
-
-### 1. **Load Data**
-
-The first step is to load the image and annotation data using the `easyolo.load_data()` method. This will automatically generate the `data.yaml` file used for training.
-
-#### Syntax:
+### 1. Importing the Library
 
 ```python
-easyolo.load_data(image_dir: str, annotation_dir: str, validation: bool=False, val_image_dir: str=None, val_annotation_dir: str=None, split: float=0.2)
+from easyolo import EasyOLO
 ```
 
-#### Parameters:
-- `image_dir`: Path to the directory containing training images.
-- `annotation_dir`: Path to the directory containing annotation files (YOLO `.txt` format).
-- `validation`: Set to `True` if you have separate validation data. Default is `False`.
-- `val_image_dir`: Path to the validation image directory (required if `validation=True`).
-- `val_annotation_dir`: Path to the validation annotation directory (required if `validation=True`).
-- `split`: The proportion of data to use for validation if `validation=False`. Default is `0.2`.
-
-#### Example 1: **Loading Data with Train-Validation Split**
+### 2. Initializing the `EasyOLO` Class
 
 ```python
-import easyolo
+yolo = EasyOLO()
+```
 
-# Load the training and validation data
-easyolo.load_data(
-    image_dir='/images',             # Path to training images
-    annotation_dir='/annotations',   # Path to annotations (YOLO format)
-    validation=True,                 # Enable validation set
-    val_image_dir='/val_images',     # Path to validation images
-    val_annotation_dir='/val_annotations'  # Path to validation annotations
+### 3. Loading Data for Training
+
+Use the `load_data` method to load your dataset for training. The method supports dataset splitting and validation set handling.
+
+```python
+yolo.load_data(
+    image_dir='path/to/images',
+    annotation_dir='path/to/annotations',
+    validation=True,  # Set to True to use a validation set
+    val_image_dir='path/to/validation/images',
+    val_annotation_dir='path/to/validation/annotations',
+    split=0.2,  # 20% of data for validation
+    class_names=['class1', 'class2', 'class3']  # Optional, specify class names
 )
 ```
 
-#### Example 2: **Loading Data with a Train Split (Default Split = 0.2)**
+### 4. Training the Model
+
+After loading the data, you can train the YOLO model by calling the `train()` method. Specify the path to the data YAML file, as well as other hyperparameters such as epochs and learning rate.
 
 ```python
-import easyolo
-
-# Load the training data with a 20% validation split
-easyolo.load_data(
-    image_dir='/images',             # Path to training images
-    annotation_dir='/annotations',   # Path to annotations (YOLO format)
-    validation=False,                # No separate validation data
-    split=0.2                        # Use 20% for validation
+yolo.train(
+    data_file='/content/data.yaml',
+    epochs=100,
+    batch=16,
+    img_size=640,
+    lr=0.01,
+    save_dir='output/training',
+    weights='/content/yolov5su.pt'  # Path to initial weights
 )
 ```
 
-### 2. **Train the Model**
+### 5. Making Predictions
 
-Once the data is loaded, you can easily train the model using `easyolo.train()`.
+You can use the trained model to make predictions on single images, directories of images, or even from a webcam feed. 
 
-#### Syntax:
-
-```python
-easyolo.train(epochs: int=100, batch_size: int=16, img_size: int=640, lr: float=0.01, save_dir: str='output/training', weights: str='yolov5s.pt', **kwargs)
-```
-
-#### Parameters:
-- `epochs`: Number of epochs for training. Default is `100`.
-- `batch_size`: Batch size for training. Default is `16`.
-- `img_size`: Size of the images used for training. Default is `640`.
-- `lr`: Learning rate. Default is `0.01`.
-- `save_dir`: Directory to save the trained model and results. Default is `'output/training'`.
-- `weights`: Path to the pre-trained weights file. Default is `'yolov5s.pt'`.
-- `**kwargs`: Any other YOLOv5-specific training parameters.
-
-#### Example 1: **Training the Model**
+- **Single Image Prediction**:
 
 ```python
-import easyolo
-
-# Train the model using the automatically generated data.yaml
-easyolo.train(
-    epochs=100,                             # Number of epochs
-    batch_size=16,                          # Batch size
-    img_size=640,                           # Image size
-    lr=0.01,                                # Learning rate
-    save_dir='output/training'              # Save results to this directory
+yolo.predict(
+    model_path='output/training/yolo_finetuned.pt',  # Path to trained model
+    image_path='path/to/image.jpg'  # Path to an image
 )
 ```
 
-#### Example 2: **Training the Model with Custom Hyperparameters**
+- **Multiple Images Prediction**:
 
 ```python
-import easyolo
-
-# Train the model using custom hyperparameters
-easyolo.train(
-    epochs=200,                             # Number of epochs
-    batch_size=32,                          # Batch size
-    img_size=416,                           # Image size
-    lr=0.005,                               # Learning rate
-    save_dir='output/training/custom_model' # Save results to this directory
+yolo.predict(
+    model_path='output/training/yolo_finetuned.pt',
+    image_dir='path/to/images'  # Directory containing images
 )
 ```
 
-### 3. **Inference (Object Detection)**
-
-Once the model is trained, you can perform inference (object detection) on an image, directory of images, or even using a webcam.
-
-#### Syntax:
+- **Webcam Prediction**:
 
 ```python
-easyolo.detect(input_type: str, input_path: str, model_path: str='output/training/weights/best.pt', **kwargs)
-```
-
-#### Parameters:
-- `input_type`: Type of input for inference. Can be `'image'`, `'images'`, or `'webcam'`.
-- `input_path`: Path to the image or directory of images, or camera number for webcam.
-- `model_path`: Path to the trained model weights. Default is `'output/training/weights/best.pt'`.
-- `**kwargs`: Additional parameters for inference (e.g., confidence threshold, image size).
-
-#### Example 1: **Image Inference**
-
-```python
-import easyolo
-
-# Perform object detection on a single image
-easyolo.detect(
-    input_type='image',          # Single image
-    input_path='/path/to/image.jpg',  # Path to the image
-    model_path='output/training/weights/best.pt'  # Path to the trained model
+yolo.predict(
+    model_path='output/training/yolo_finetuned.pt',
+    webcam_index=0  # Index of the webcam
 )
 ```
 
-#### Example 2: **Directory Inference**
+### 6. Loading a Pre-trained Model
+
+To use a pre-trained model, simply call the `load_model()` method:
 
 ```python
-import easyolo
+yolo.load_model('path/to/trained_model.pt')
+```
 
-# Perform object detection on a directory of images
-easyolo.detect(
-    input_type='images',              # Multiple images
-    input_path='/path/to/images/',    # Directory containing images
-    model_path='output/training/weights/best.pt'  # Path to the trained model
+## Key Methods
+
+### `load_data()`
+
+This method is used to load and prepare your dataset for training. You can specify directories for training and validation images, split data, and provide class names.
+
+- **Arguments**:
+  - `image_dir (str)`: Path to the images directory.
+  - `annotation_dir (str)`: Path to the annotations directory.
+  - `validation (bool)`: If `True`, use a separate validation set.
+  - `val_image_dir (str)`: Path to the validation images directory (required if `validation=True`).
+  - `val_annotation_dir (str)`: Path to the validation annotations directory (required if `validation=True`).
+  - `split (float)`: Proportion of data to use for validation.
+  - `class_names (list)`: List of class names for your dataset (optional).
+
+### `train()`
+
+This method is used to train the YOLO model. It requires a data YAML file and allows for customizing training parameters such as epochs, batch size, image size, learning rate, and more.
+
+- **Arguments**:
+  - `data_file (str)`: Path to the data YAML file.
+  - `epochs (int)`: Number of epochs for training.
+  - `batch (int)`: Batch size for training.
+  - `img_size (int)`: Image size (default is 640).
+  - `lr (float)`: Learning rate.
+  - `save_dir (str)`: Directory to save the model and logs.
+  - `weights (str)`: Path to the pre-trained weights file.
+
+### `predict()`
+
+This method performs predictions using a trained YOLO model. You can predict on a single image, a directory of images, or a live webcam feed.
+
+- **Arguments**:
+  - `model_path (str)`: Path to the trained YOLO model.
+  - `image_path (str)`: Path to an image (optional if `image_dir` or `webcam_index` is provided).
+  - `image_dir (str)`: Path to a directory of images (optional if `image_path` or `webcam_index` is provided).
+  - `webcam_index (int)`: Index of the webcam for live prediction (optional).
+
+### `load_model()`
+
+This method is used to load a pre-trained YOLO model for prediction or further training.
+
+- **Arguments**:
+  - `model_path (str)`: Path to the pre-trained model.
+
+## Example Workflow
+
+Here is an example of the entire workflow:
+
+1. **Prepare Data**:
+
+```python
+yolo.load_data(
+    image_dir='images',
+    annotation_dir='annotations',
+    validation=True,
+    val_image_dir='val_images',
+    val_annotation_dir='val_annotations',
+    split=0.2,
+    class_names=['dog', 'cat', 'bird']
 )
 ```
 
-#### Example 3: **Webcam Inference**
+2. **Train the Model**:
 
 ```python
-import easyolo
-
-# Perform object detection using the webcam (e.g., camera 0)
-easyolo.detect(
-    input_type='webcam',             # Webcam input
-    input_path='0',                  # Camera number (e.g., 0)
-    model_path='output/training/weights/best.pt'  # Path to the trained model
+yolo.train(
+    data_file='/content/data.yaml',
+    epochs=50,
+    batch=16,
+    img_size=640,
+    lr=0.01,
+    save_dir='output/training',
+    weights='/content/yolov5su.pt'
 )
 ```
 
-## License
+3. **Make Predictions**:
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```python
+yolo.predict(
+    model_path='output/training/yolo_finetuned.pt',
+    image_path='test.jpg'
+)
+```
 
-## Acknowledgements
+4. **Webcam Predictions**:
 
-- [Ultralytics YOLOv5](https://github.com/ultralytics/yolov5) for the original YOLOv5 implementation.
-- [PyTorch](https://pytorch.org/) for deep learning framework.
+```python
+yolo.predict(
+    model_path='output/training/yolo_finetuned.pt',
+    webcam_index=0
+)
+```
 
+## Conclusion
+
+EasyOLO simplifies working with YOLO models for object detection tasks, making it easier for both beginners and experienced users to train and make predictions. Whether you're working with a single image or a live webcam feed, this library provides a simple and powerful API for your computer vision projects.
