@@ -91,39 +91,33 @@ class EasyOLO:
                     class_ids.add(line.split()[0])
         return sorted(class_ids)
 
-    def train(self, epochs=100, batch_size=16, img_size=640, lr=0.01, save_dir='output/training', weights='yolov5s.pt',
-              custom_data_file=None):
-        """
-        Train the YOLO model.
-
-        Args:
-            epochs (int): Number of training epochs.
-            batch_size (int): Batch size for training.
-            img_size (int): Input image size.
-            lr (float): Learning rate.
-            save_dir (str): Directory to save training outputs.
-            weights (str): Path to pre-trained weights.
-            custom_data_file (str): Path to a custom data.yaml file.
-        """
-        if custom_data_file:
-            if not Path(custom_data_file).exists():
-                raise FileNotFoundError(f"Custom data file {custom_data_file} not found.")
-            self.data_yaml = custom_data_file
-        elif not self.data_yaml:
-            raise ValueError("Data.yaml file not found. Please load data first or provide a custom data file.")
-
+    def train(self, custom_data_file, epochs=100, batch=16, img_size=640, lr=0.01, save_dir='output/training', weights='/content/yolov5su.pt'):
+        if not custom_data_file:
+            raise ValueError("Custom data file must be specified for training.")
+    
+        if not Path(custom_data_file).exists():
+            raise FileNotFoundError(f"Data file {custom_data_file} does not exist.")
+    
+        # Ensure the weights path exists
+        if not Path(weights).exists():
+            raise FileNotFoundError(f"Weight file {weights} does not exist.")
+    
+        # Load YOLO model
         self.model = YOLO(weights)
+    
+        # Train the model
         self.model.train(
-            data=self.data_yaml,
+            data=custom_data_file,
             epochs=epochs,
-            batch_size=batch_size,
+            batch=batch,
             imgsz=img_size,
             lr0=lr,
             project=save_dir,
             name='yolo_finetuned',
-            exist_ok=True,
+            exist_ok=True
         )
         print(f"Training completed. Model saved at {save_dir}/yolo_finetuned")
+
 
     def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
         """
