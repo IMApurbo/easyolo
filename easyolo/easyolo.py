@@ -6,7 +6,6 @@ import shutil
 import yaml
 from pathlib import Path
 from ultralytics import YOLO
-import matplotlib.pyplot as plt
 
 class EasyOLO:
     def __init__(self):
@@ -119,7 +118,6 @@ class EasyOLO:
         )
         print(f"Training completed. Model saved at {save_dir}/yolo_finetuned")
 
-
     def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
         """
         Predict using the YOLO model.
@@ -158,11 +156,7 @@ class EasyOLO:
         if image is None:
             raise ValueError(f"Error reading image {image_path}.")
         results = self.model(image)
-        
-        # Plot the result using matplotlib for environments like Google Colab
-        plt.imshow(results[0].plot())
-        plt.axis('off')  # Hide axes
-        plt.show()
+        results[0].plot()  # This will plot the bounding boxes on the original image without altering color.
 
     def _predict_multiple_images(self, image_dir):
         """Predict on multiple images in a directory."""
@@ -179,14 +173,7 @@ class EasyOLO:
             if not ret:
                 break
             results = self.model(frame)
-            
-            # Plot the result using matplotlib for webcam feed
-            plt.imshow(results[0].plot())
-            plt.axis('off')  # Hide axes
-            plt.draw()
-            plt.pause(0.001)  # Brief pause to update the plot
-
-            # Break the loop if 'q' is pressed
+            results[0].plot()  # This will plot the bounding boxes on the webcam feed without altering color.
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
