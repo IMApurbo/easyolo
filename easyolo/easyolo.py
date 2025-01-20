@@ -119,7 +119,6 @@ class EasyOLO:
         )
         print(f"Training completed. Model saved at {save_dir}/yolo_finetuned")
 
-
     def predict(self, model_path, image_path=None, image_dir=None, webcam_index=None):
         """
         Predict using the YOLO model.
@@ -191,3 +190,26 @@ class EasyOLO:
                 break
         cap.release()
         cv2.destroyAllWindows()
+
+    def track_objects(self, source, conf=0.3, iou=0.5, show=True):
+        """
+        Track objects in a video or webcam feed using the YOLO model.
+
+        Args:
+            source (str): Path to the video file, YouTube URL, or 'webcam' for live tracking.
+            conf (float): Confidence threshold for tracking.
+            iou (float): Intersection over union threshold for tracking.
+            show (bool): If True, display the tracking results in a window.
+        """
+        if not self.model:
+            raise ValueError("Model is not loaded. Please load a model first.")
+
+        # Perform object tracking
+        results = self.model.track(source=source, conf=conf, iou=iou, show=show)
+        
+        if show:
+            plt.imshow(results[0].plot())  # Display the tracked results using matplotlib for environments like Google Colab
+            plt.axis('off')
+            plt.show()
+        else:
+            print("Tracking completed.")
