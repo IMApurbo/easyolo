@@ -6,6 +6,7 @@ import shutil
 import yaml
 from pathlib import Path
 from ultralytics import YOLO
+import matplotlib.pyplot as plt
 
 class EasyOLO:
     def __init__(self):
@@ -157,7 +158,11 @@ class EasyOLO:
         if image is None:
             raise ValueError(f"Error reading image {image_path}.")
         results = self.model(image)
-        results[0].plot()
+        
+        # Plot the result using matplotlib for environments like Google Colab
+        plt.imshow(results[0].plot())
+        plt.axis('off')  # Hide axes
+        plt.show()
 
     def _predict_multiple_images(self, image_dir):
         """Predict on multiple images in a directory."""
@@ -174,7 +179,14 @@ class EasyOLO:
             if not ret:
                 break
             results = self.model(frame)
-            results[0].plot()
+            
+            # Plot the result using matplotlib for webcam feed
+            plt.imshow(results[0].plot())
+            plt.axis('off')  # Hide axes
+            plt.draw()
+            plt.pause(0.001)  # Brief pause to update the plot
+
+            # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
